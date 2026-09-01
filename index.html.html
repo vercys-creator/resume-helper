@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历优化助手 · AI PM 版</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --ink:#1a2333; --muted:#6b7280;
+    --line:#e5e9f2; --brand:#4f46e5; --brand2:#7c3aed; --good:#16a34a;
+    --warn:#d97706; --bad:#dc2626; --chip:#eef2ff; --chipink:#4338ca;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#eef2ff 0%,#f5f7fb 40%,#fdf2f8 100%);min-height:100vh;color:var(--ink);padding:24px 16px}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{text-align:center;margin-bottom:22px}
+  header h1{font-size:26px;font-weight:800;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{color:var(--muted);font-size:13px;margin-top:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 4px 18px rgba(30,41,90,.06)}
+  .card h2{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;font-weight:600;color:var(--chipink);background:var(--chip);padding:2px 8px;border-radius:99px}
+  textarea{width:100%;height:260px;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:13px;
+    line-height:1.6;resize:vertical;font-family:inherit;color:var(--ink);background:#fbfcfe;outline:none;transition:.2s}
+  textarea:focus{border-color:var(--brand);background:#fff}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .btn{flex:1;min-width:140px;border:none;border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s}
+  .btn-main{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#fff;box-shadow:0 6px 18px rgba(79,70,229,.3)}
+  .btn-main:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(79,70,229,.4)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+  .btn:active{transform:scale(.98)}
+  .result{margin-top:18px}
+  .score-row{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center}
+  @media(max-width:760px){.score-row{grid-template-columns:1fr}}
+  .ring{position:relative;width:170px;height:170px;margin:0 auto}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .num b{font-size:44px;font-weight:800}
+  .ring .num span{font-size:12px;color:var(--muted)}
+  .verdict{font-size:14px;line-height:1.7;padding:12px 14px;border-radius:12px;background:#fbfcfe;border:1px solid var(--line)}
+  .metrics{margin-top:16px;display:grid;gap:12px}
+  .metric .bar{height:10px;border-radius:99px;background:#eef0f6;overflow:hidden;margin-top:5px}
+  .metric .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .6s ease}
+  .metric .top{display:flex;justify-content:space-between;font-size:13px}
+  .metric .top .k{font-weight:600}
+  .metric .top .v{color:var(--muted);font-variant-numeric:tabular-nums}
+  .kw{margin-top:18px}
+  .kw h3{font-size:13px;font-weight:700;margin-bottom:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:12px;padding:5px 11px;border-radius:99px;border:1px solid;line-height:1.4}
+  .chip.hit{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+  .chip.miss{background:#fff1f2;border-color:#fecdd3;color:#be123c}
+  .chip .n{opacity:.6;font-size:11px}
+  .section{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
+  .section h3{font-size:14px;font-weight:700;margin-bottom:10px}
+  .list{list-style:none}
+  .list li{font-size:13px;line-height:1.6;padding:7px 10px;border-radius:10px;margin-bottom:5px;background:#fbfcfe;border:1px solid var(--line)}
+  .list li b{color:var(--brand)}
+  .prompt-box{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;font-size:12.5px;line-height:1.7;
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-all;max-height:320px;overflow:auto}
+  .prompt-box .role{color:#a5b4fc;font-weight:700}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:13px}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
+  .flash{animation:flash 1.2s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(79,70,229,.5)}100%{box-shadow:0 0 0 18px rgba(79,70,229,0)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📄 简历优化助手 <small style="font-size:13px;font-weight:600;color:var(--brand)">AI PM 版</small></h1>
+    <p>粘贴你的简历和目标岗位 JD，30 秒拿到评分、关键词覆盖、量化诊断 + 一条可直接丢给 AI 的深度优化 Prompt</p>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>🧑‍💻 你的简历 <span class="tag">粘贴全文</span></h2>
+      <textarea id="resume" placeholder="把你的简历全文粘到这里…&#10;&#10;例如：&#10;教育背景 / 实习经历 / 项目经历 / 技能清单 等完整内容"></textarea>
+      <div class="hint">支持任何格式的纯文本简历</div>
+    </div>
+    <div class="card">
+      <h2>🎯 目标岗位 JD <span class="tag">粘贴职位描述</span></h2>
+      <textarea id="jd" placeholder="把目标岗位的职位描述(JD)粘到这里…&#10;&#10;例如：&#10;AI产品经理 岗位职责与任职要求"></textarea>
+      <div class="hint">AI 会从 JD 里抽关键词，检查你的简历是否命中</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="button" class="btn btn-main" onclick="run()">✨ 一键诊断我的简历</button>
+    <button type="button" class="btn btn-ghost" onclick="fillDemo()">🎬 载入示例</button>
+    <button type="button" class="btn btn-ghost" onclick="clearAll()">🗑 清空</button>
+  </div>
+
+  <div id="result" class="result"></div>
+  <div class="foot">纯本地运行 · 不联网 · 不上传任何数据 · 导出 .doc 可用 Word/WPS 打开</div>
+</div>
+
+<script>
+/* ============ 全局状态 ============ */
+var __last = null;
+
+/* ============ 工具函数（ES5 兼容） ============ */
+function hasStr(big, small){ return big.indexOf(small) !== -1; }
+function lower(s){ return String(s).toLowerCase(); }
+
+/* ============ AI PM 能力关键词库（命中即加分） ============ */
+var SKILL_DICT = [
+  ["需求分析","需求调研","用户调研","需求文档","PRD","MRD","竞品分析","市场分析","用户画像","用户分层","用户旅程"],
+  ["数据分析","数据驱动","埋点","漏斗分析","转化率","留存","A/B测试","AB测试","SQL","Python","Excel","指标体系","北极星指标"],
+  ["大模型","LLM","AIGC","生成式AI","Prompt","提示词","RAG","检索增强","向量检索","知识库","Fine-tune","微调","多模态","Agent","智能体","工作流","Coze","Dify","API","LangChain"],
+  ["原型","Figma","Axure","Sketch","交互设计","PRD评审","产品规划","路线图","Roadmap","MVP","最小可行产品","产品迭代"],
+  ["项目管理","跨部门协作","资源协调","排期","推动落地","上线","复盘","OKR","KPI","敏捷","Scrum"],
+  ["增长","拉新","促活","变现","GMV","ROI","用户增长","私域","运营策略","活动策划","内容运营"]
+];
+var SKILL_FLAT = [];
+(function(){
+  for(var i=0;i<SKILL_DICT.length;i++){ SKILL_FLAT = SKILL_FLAT.concat(SKILL_DICT[i]); }
+})();
+
+/* 动作动词 */
+var ACTION_VERBS = ["负责","主导","搭建","设计","推动","提升","优化","构建","实现","带领","完成","达成","增长","降低","节约","驱动","落地","从0到1","从0-1","重构","迭代","孵化","沉淀","梳理","制定","输出","交付","协调","统筹"];
+
+/* 停用词 */
+var STOP_WORDS = ["的","了","和","与","及","或","在","是","有","为","以","对","把","被","等","并","而","也","都","要","能","会","可以","需要","进行","通过","一个","我们","你","我","他","她","它","这个","那个","以及","相关","以上","以下","其中","方面","能力","经验","优先","熟悉","了解","掌握","具备","具有","要求","负责","参与","任职","岗位","工作","职责","内容","包括","例如","比如","如果","但是","并且","同时","按照","根据","一定","一些","各种","不断","持续","良好","较强","优秀","加分","团队","公司","产品","项目","欢迎","以上","以下","就是","不是","怎么","什么","多少"];
+function isStop(w){
+  if(!w) return true;
+  for(var i=0;i<STOP_WORDS.length;i++){ if(STOP_WORDS[i]===w) return true; }
+  return false;
+}
+
+/* ============ 关键词提取（n-gram） ============ */
+function extractKeywords(text, topN){
+  if(!topN) topN = 28;
+  var t = String(text).replace(/[\r\n\t]+/g," ").replace(/[^一-龥a-zA-Z0-9+#.／%·\-]/g," ");
+  var freq = {};
+  function add(w){
+    if(!w) return;
+    w = w.replace(/^\s+|\s+$/g,"");
+    if(w.length<2 || w.length>8) return;
+    freq[w] = (freq[w]||0)+1;
+  }
+  // 英文/数字词组
+  var en = t.match(/[a-zA-Z][a-zA-Z0-9+#.\-]{1,12}/g);
+  if(en){ for(var i=0;i<en.length;i++){ add(lower(en[i])); } }
+  // 中文 2-4 字滑窗
+  var cn = t.replace(/[^一-龥]/g,"");
+  for(var len=4; len>=2; len--){
+    for(var i=0;i+len<=cn.length;i++){
+      var seg = cn.slice(i, i+len);
+      var hasStop = false;
+      for(var s=0;s<STOP_WORDS.length;s++){ if(seg.indexOf(STOP_WORDS[s])!==-1){ hasStop=true; break; } }
+      if(hasStop) continue;
+      add(seg);
+    }
+  }
+  var arr = [];
+  for(var w in freq){
+    if(!freq.hasOwnProperty(w)) continue;
+    if(isStop(w)) continue;
+    if(/^\d+$/.test(w)) continue;
+    arr.push({w:w, c:freq[w]});
+  }
+  arr.sort(function(a,b){ return b.c - a.c; });
+  arr = arr.slice(0, topN);
+  var out = [];
+  for(var k=0;k<arr.length;k++){ out.push({w:arr[k].w, c:arr[k].c}); }
+  return out;
+}
+
+/* ============ 主分析 ============ */
+function run(){
+  var resume = document.getElementById("resume").value.replace(/^\s+|\s+$/g,"");
+  var jd = document.getElementById("jd").value.replace(/^\s+|\s+$/g,"");
+  var res = document.getElementById("result");
+  if(!resume || !jd){
+    res.innerHTML = '<div class="card empty flash">请先粘贴「简历」和「JD」两栏内容，再点诊断 🙂</div>';
+    scrollToResult();
+    return;
+  }
+
+  var R = resume, J = jd;
+  var jdKws = extractKeywords(J, 30);
+  var jdKeys = [];
+  for(var i=0;i<jdKws.length;i++){ jdKeys.push(lower(jdKws[i].w)); }
+
+  /* 1. 能力词库命中 */
+  var skillHit = [], skillMiss = [];
+  for(var i=0;i<SKILL_FLAT.length;i++){
+    var k = SKILL_FLAT[i];
+    var inR = hasStr(lower(R), lower(k));
+    var inJ = hasStr(lower(J), lower(k));
+    if(!inJ) continue;           // JD 没提到的技能不考核
+    if(inR){ skillHit.push(k); } else { skillMiss.push(k); }
+  }
+
+  /* 2. JD 高频词覆盖 */
+  var jdHit = [], jdMiss = [];
+  for(var i=0;i<jdKeys.length && i<18;i++){
+    var k = jdKeys[i];
+    var inSkill = false;
+    for(var s=0;s<SKILL_FLAT.length;s++){ if(lower(SKILL_FLAT[s])===k){ inSkill=true; break; } }
+    if(inSkill) continue;
+    if(hasStr(lower(R), k)){ jdHit.push(k); } else { jdMiss.push(k); }
+  }
+
+  /* 3. 量化成果 */
+  var nums = R.match(/\d+(\.\d+)?\s*(%|％|万|亿|千|倍|人|个|条|篇|次|天|月|年|元|k|w|K|W)?/g) || [];
+  var quantCount = 0;
+  for(var i=0;i<nums.length;i++){ if(/\d/.test(nums[i])) quantCount++; }
+
+  /* 4. 动作动词 */
+  var actionHit = [];
+  for(var i=0;i<ACTION_VERBS.length;i++){ if(hasStr(R, ACTION_VERBS[i])) actionHit.push(ACTION_VERBS[i]); }
+
+  /* 5. 结构章节 */
+  var sectionStatus = [];
+  var secDefs = [["教育",/教育|学历|学校|专业|毕业/],["经历",/经历|实习|工作/],["项目",/项目|作品/],["技能",/技能|工具|技术栈/],["个人",/个人|自我评价|简介|总结/]];
+  for(var i=0;i<secDefs.length;i++){
+    sectionStatus.push({name:secDefs[i][0], ok:secDefs[i][1].test(R)});
+  }
+
+  /* 6. 长度 */
+  var len = R.replace(/\s/g,"").length;
+  var lenOK = len>=500 && len<=1600;
+
+  /* 评分 */
+  var denom1 = skillHit.length + skillMiss.length; if(denom1===0) denom1=1;
+  var s_skill = skillHit.length/denom1*100;
+  var denom2 = jdHit.length + jdMiss.length; if(denom2===0) denom2=1;
+  var s_jd = jdHit.length/denom2*100;
+  var s_quant = Math.min(100, quantCount*14);
+  var s_action = Math.min(100, actionHit.length*10);
+  var structOk = 0;
+  for(var i=0;i<sectionStatus.length;i++){ if(sectionStatus[i].ok) structOk++; }
+  var s_struct = structOk/sectionStatus.length*100;
+  var s_len = lenOK?100: Math.max(30, 100-Math.abs(len-1000)/15);
+
+  var dims = [
+    {k:"JD 关键词覆盖", v:Math.round(s_jd*0.6+s_skill*0.4), tip:"你的简历命中目标 JD 关键词的比例"},
+    {k:"量化成果", v:Math.round(s_quant), tip:"用数字说话的程度（% / 金额 / 数量）"},
+    {k:"动作动词", v:Math.round(s_action), tip:"是否用强动词开头（主导/搭建/推动…）"},
+    {k:"结构完整", v:Math.round(s_struct), tip:"教育/经历/项目/技能章节是否齐全"},
+    {k:"篇幅合适", v:Math.round(s_len), tip:"中文简历建议 800–1200 字"}
+  ];
+  var sum = 0;
+  for(var i=0;i<dims.length;i++){ sum += dims[i].v; }
+  var total = Math.round(sum/dims.length);
+  var verdict;
+  if(total>=85){ verdict = "💪 很能打！重点补 JD 缺失关键词，可直接投"; }
+  else if(total>=70){ verdict = "👍 基础不错，按下方建议补关键词和量化即可提升"; }
+  else if(total>=55){ verdict = "🛠 有明显短板，建议按 Prompt 让 AI 深度改一版"; }
+  else { verdict = "⚠️ 匹配度偏低，先别急着投，照建议系统改一版"; }
+
+  /* 生成深度优化 Prompt */
+  var missing = jdMiss.concat(skillMiss).slice(0,12);
+  var missingStr = missing.join("、") || "（基本都已覆盖，请做表达升级）";
+  var quantTip = quantCount<3 ? "我量化成果偏少，请帮我标出哪些经历可以补充具体数字" : "我已有量化成果，请进一步强化数据的业务价值";
+  var prompt = "你是资深 AI 产品经理简历优化专家。请按以下要求，把我这份简历针对目标岗位做一版「求职导向」的深度优化：\n\n" +
+    "【目标岗位 JD】\n" + J + "\n\n" +
+    "【我的原始简历】\n" + R + "\n\n" +
+    "【优化要求】\n" +
+    "1. 保留真实经历，不虚构数据；缺失的信息用〔待补充〕标出并提示我。\n" +
+    "2. 每条经历用「动作动词 + 任务 + 量化结果」句式重写，突出可量化成果（" + quantTip + "）。\n" +
+    "3. 针对 JD 里的这些关键词/能力，逐条对照我的简历，把「缺失项」写成可落地的补充建议：" + missingStr + "。\n" +
+    "4. 输出结构：①整体诊断（3点）②逐段改写后的简历全文 ③JD关键词覆盖对照表 ④我下一步最该补的3件事。\n" +
+    "5. 语气专业、直接给结果，不要空话套话。\n\n" +
+    "现在开始，直接输出优化后的简历。";
+
+  render({total:total,verdict:verdict,dims:dims,skillHit:skillHit,skillMiss:skillMiss,jdHit:jdHit,jdMiss:jdMiss,quantCount:quantCount,actionHit:actionHit,sectionStatus:sectionStatus,len:len,prompt:prompt});
+  scrollToResult();
+}
+
+function scrollToResult(){
+  var res = document.getElementById("result");
+  try{ res.scrollIntoView({behavior:"smooth", block:"start"}); }catch(e){ try{ res.scrollIntoView(); }catch(e2){} }
+}
+
+/* ============ 渲染 ============ */
+function render(o){
+  var ringP = o.total/100;
+  var circ = 2*Math.PI*70;
+  var missAll = o.jdMiss.concat(o.skillMiss).slice(0,20);
+  var hitAll = o.jdHit.concat(o.skillHit).slice(0,20);
+  var scoreColor = o.total>=85 ? 'var(--good)' : (o.total>=55 ? 'var(--brand)' : 'var(--warn)');
+
+  var hitChipsHtml = '';
+  if(hitAll.length===0){ hitChipsHtml = '<span class="chip">暂无</span>'; }
+  else { for(var i=0;i<hitAll.length;i++){ hitChipsHtml += '<span class="chip hit">'+hitAll[i]+'</span>'; } }
+
+  var missChipsHtml = '';
+  if(missAll.length===0){ missChipsHtml = '<span class="chip hit">全部覆盖，很棒 👍</span>'; }
+  else { for(var i=0;i<missAll.length;i++){ missChipsHtml += '<span class="chip miss">'+missAll[i]+'</span>'; } }
+
+  var metricsHtml = '';
+  for(var i=0;i<o.dims.length;i++){
+    var d = o.dims[i];
+    metricsHtml += '<div class="metric">' +
+      '<div class="top"><span class="k">'+d.k+'<span style="color:var(--muted);font-weight:400;font-size:11px"> · '+d.tip+'</span></span>' +
+      '<span class="v">'+d.v+'</span></div>' +
+      '<div class="bar"><i style="width:'+d.v+'%"></i></div></div>';
+  }
+
+  var sectionHtml = '';
+  for(var i=0;i<o.sectionStatus.length;i++){
+    var s = o.sectionStatus[i];
+    sectionHtml += '<li>'+(s.ok?'✅':'⚠️')+' '+s.name+'章节 '+(s.ok?'已识别':'未识别——建议补充')+'</li>';
+  }
+
+  var top4 = missAll.slice(0,4).join("、") || "无";
+  var verbSample = ACTION_VERBS.slice(0,4).join(" / ");
+  var quantNote = o.quantCount<5 ? "，偏少" : "";
+
+  var html = '' +
+  '<div class="grid" style="margin-top:18px">' +
+    '<div class="card">' +
+      '<h2>📊 诊断结果</h2>' +
+      '<div class="score-row">' +
+        '<div class="ring">' +
+          '<svg width="170" height="170">' +
+            '<circle cx="85" cy="85" r="70" fill="none" stroke="#eef0f6" stroke-width="14"/>' +
+            '<circle cx="85" cy="85" r="70" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round"' +
+              ' stroke-dasharray="'+circ+'" stroke-dashoffset="'+circ*(1-ringP)+'" style="transition:stroke-dashoffset .8s ease"/>' +
+            '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+              '<stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>' +
+          '</svg>' +
+          '<div class="num"><b style="color:'+scoreColor+'">'+o.total+'</b><span>综合匹配分</span></div>' +
+        '</div>' +
+        '<div class="verdict">'+o.verdict+'<br><span style="color:var(--muted);font-size:12px">量化成果 '+o.quantCount+' 处 · 动作动词 '+o.actionHit.length+' 个 · 正文约 '+o.len+' 字</span></div>' +
+      '</div>' +
+      '<div class="metrics">'+metricsHtml+'</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h2>🔍 JD 关键词覆盖</h2>' +
+      '<div class="kw"><h3>✅ 已命中（'+hitAll.length+'）</h3><div class="chips">'+hitChipsHtml+'</div></div>' +
+      '<div class="kw"><h3>❌ 建议补充（'+missAll.length+'）</h3><div class="chips">'+missChipsHtml+'</div></div>' +
+      '<div class="section"><h3>🧩 结构体检</h3><ul class="list">'+sectionHtml+'</ul></div>' +
+      '<div class="section"><h3>💡 快速建议（3 条）</h3><ul class="list">' +
+        '<li><b>补关键词：</b>把「'+top4+'」用真实经历自然带进简历</li>' +
+        '<li><b>提量化：</b>每条经历尽量带数字（% / 金额 / 数量），当前 '+o.quantCount+' 处'+quantNote+'</li>' +
+        '<li><b>换动词：</b>句首用「'+verbSample+'」替代「参与了、帮了忙」</li>' +
+      '</ul></div>' +
+    '</div>' +
+  '</div>' +
+  '<div class="card section" style="margin-top:16px">' +
+    '<h2>🤖 一键深度优化 Prompt <span class="tag">复制丢给 Claude / GPT</span></h2>' +
+    '<p class="hint" style="margin:0 0 10px">把下面整段复制到任意 AI 对话框，它会把你的简历按 JD 深度改一版（含逐段改写 + 关键词对照 + 下一步清单）</p>' +
+    '<div class="prompt-box"><span class="role"># 简历优化指令</span>\n'+escapeHtml(o.prompt)+'</div>' +
+    '<div class="btn-row" style="margin-top:12px">' +
+      '<button type="button" class="btn btn-ghost" onclick="copyPrompt(this)">📋 复制 Prompt</button>' +
+      '<button type="button" class="btn btn-main" onclick="exportDoc()">📤 导出 Word 报告</button>' +
+    '</div>' +
+  '</div>';
+
+  document.getElementById("result").innerHTML = html;
+  __last = o;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ============ 复制 / 导出 ============ */
+function copyPrompt(btn){
+  var t = "# 简历优化指令\n" + __last.prompt;
+  function done(){ btn.textContent="✅ 已复制"; setTimeout(function(){ btn.textContent="📋 复制 Prompt"; },1600); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done, function(){ fallbackCopy(t); done(); });
+  } else { fallbackCopy(t); done(); }
+}
+function fallbackCopy(t){
+  var ta = document.createElement("textarea");
+  ta.value = t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function exportDoc(){
+  if(!__last) return;
+  var o = __last;
+  var missAll = o.jdMiss.concat(o.skillMiss);
+  var hitAll = o.jdHit.concat(o.skillHit);
+
+  var rows = '';
+  for(var i=0;i<o.dims.length;i++){
+    var d = o.dims[i];
+    rows += '<tr><td>'+d.k+'</td><td>'+d.v+'</td><td>'+d.tip+'</td></tr>';
+  }
+  var hitChips = '';
+  for(var i=0;i<hitAll.length;i++){
+    hitChips += '<span style="display:inline-block;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:12px;padding:2px 8px;margin:2px;font-size:12px">'+hitAll[i]+'</span>';
+  }
+  var missChips = '';
+  for(var i=0;i<missAll.length;i++){
+    missChips += '<span style="display:inline-block;background:#fff1f2;border:1px solid #fecdd3;color:#be123c;border-radius:12px;padding:2px 8px;margin:2px;font-size:12px">'+missAll[i]+'</span>';
+  }
+  var secHtml = '';
+  for(var i=0;i<o.sectionStatus.length;i++){
+    var s = o.sectionStatus[i];
+    secHtml += '<li>'+(s.ok?'✅':'⚠️')+' '+s.name+'章节 '+(s.ok?'已识别':'未识别')+'</li>';
+  }
+
+  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+  '<head><meta charset="utf-8"><title>简历优化报告</title></head>' +
+  '<body style="font-family:微软雅黑;padding:24px">' +
+  '<h1 style="color:#4f46e5">简历优化报告 · AI PM 版</h1>' +
+  '<p>综合匹配分：<b style="font-size:22px;color:#4f46e5">'+o.total+'</b>　'+o.verdict+'</p>' +
+  '<h2>一、分项得分</h2>' +
+  '<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%"><tr style="background:#eef2ff"><th>维度</th><th>得分</th><th>说明</th></tr>'+rows+'</table>' +
+  '<h2>二、JD 关键词覆盖</h2>' +
+  '<h3>已命中（'+hitAll.length+'）</h3><p>'+(hitChips||'暂无')+'</p>' +
+  '<h3>建议补充（'+missAll.length+'）</h3><p>'+(missChips||'全部覆盖')+'</p>' +
+  '<h2>三、结构体检</h2><ul>'+secHtml+'</ul>' +
+  '<h2>四、深度优化 Prompt（复制去给 AI 用）</h2>' +
+  '<pre style="white-space:pre-wrap;background:#f5f6fa;padding:12px;border:1px solid #e5e9f2">'+escapeHtml(o.prompt)+'</pre>' +
+  '</body></html>';
+
+  var blob = new Blob(["﻿"+html], {type:"application/msword;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "简历优化报告_"+new Date().toISOString().slice(0,10)+".doc";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+/* ============ 示例 / 清空 ============ */
+function fillDemo(){
+  document.getElementById("resume").value = "李小明\n吉林大学 · 新闻传播学院 · 本科在读（大二）\n\n教育背景\n吉林大学 新闻传播学院 新闻学 2024.09–2028.06\n\n项目经历\nAI 资讯聚合工具（个人项目）\n- 参与做一个AI资讯聚合小工具，帮自己每天看行业动态\n- 用 Coze 搭了一个工作流，自动抓取公众号文章并摘要\n- 做了个简单网页展示，身边同学在用\n\n实习经历\n某 MCN 机构 · 运营实习生 2026.01–2026.06\n- 参与账号内容运营，帮忙写文案、排期\n- 帮忙整理数据，做周报\n\n技能\n熟悉大模型基础概念、会用 Coze/Dify 搭简单 Agent、Figma 基础、Excel 数据整理";
+  document.getElementById("jd").value = "AI产品经理 岗位职责：\n1. 负责AI产品的需求分析、用户调研与产品规划，输出 PRD 与产品路线图\n2. 围绕大模型、Agent、RAG 等技术，设计智能体产品与工作流\n3. 搭建数据指标体系，通过数据分析、A/B测试驱动产品迭代，提升转化率与留存\n4. 跨部门协作推动项目落地，管理项目进度\n任职要求：\n1. 熟悉大模型（LLM）、Prompt、Agent、知识库、RAG 等技术原理\n2. 具备需求分析、竞品分析、用户画像能力\n3. 能使用 SQL/Python 做数据分析，有埋点、漏斗分析经验\n4. 有从0到1 产品落地或 AI 项目实战经验优先\n5. 沟通协调能力强，结果导向";
+  run();
+}
+
+function clearAll(){
+  document.getElementById("resume").value = "";
+  document.getElementById("jd").value = "";
+  document.getElementById("result").innerHTML = "";
+  __last = null;
+}
+</script>
+</body>
+</html>
